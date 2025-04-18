@@ -1,0 +1,105 @@
+### Qt ###
+# Автогенерируемые файлы
+*.pro.user
+*.pro.user.*
+*.autosave
+
+# Сборка
+build*/
+*/build*/
+*.build
+*.build.*
+Debug/
+Release/
+x64/
+x86/
+*.dir/
+*.vcxproj.*
+*.vcxproj
+*.sln
+*.qmake.stash
+
+# Автогенерируемые файлы CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake
+Makefile
+
+### C++ ###
+# Объектные файлы
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.exe
+*.so
+*.dylib
+
+# Исходники
+*.cpp
+*.h
+*.hpp
+*.c
+*.cc
+*.cxx
+
+### Исключения ###
+!CMakeLists.txt
+!.gitignore
+!README.md
+!*.pro  # QMake проекты (если используете)
+!*.cmake  # Основные CMake файлы (если нужно)### Qt ###
+# Автогенерируемые файлы
+*.pro.user
+*.pro.user.*
+*.autosave
+
+# Сборка
+build*/
+*/build*/
+*.build
+*.build.*
+Debug/
+Release/
+x64/
+x86/
+*.dir/
+*.vcxproj.*
+*.vcxproj
+*.sln
+*.qmake.stash
+
+# Автогенерируемые файлы CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake
+Makefile
+
+### C++ ###
+# Объектные файлы
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.exe
+*.so
+*.dylib
+
+# Исходники
+*.cpp
+*.h
+*.hpp
+*.c
+*.cc
+*.cxx
+
+### Исключения ###
+!CMakeLists.txt
+!.gitignore
+!README.md
+!*.pro  # QMake проекты (если используете)
+!*.cmake  # Основные CMake файлы (если нужно)

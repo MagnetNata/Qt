@@ -23,10 +23,10 @@ private slots:
     void handleClear();
     void handleLap();
     void updateDisplay();
-    void addLap(QString lapInfo);
 
 private:
     Ui::MainWindow *ui;
     Stopwatch *m_stopwatch;
+    QString Info;
 };
 #endif // MAINWINDOW_H

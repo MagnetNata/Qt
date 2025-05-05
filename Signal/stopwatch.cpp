@@ -37,17 +37,17 @@ void Stopwatch::reset()
     emit timeUpdated();
 }
 
-void Stopwatch::lap()
+QString Stopwatch::lap()
 {
-    if (!m_running) return;
+    if (!m_running)
+        return "";
 
     qint64 currentLap = lapTimer.elapsed();
     QString lapInfo = QString("Круг %1, время: %2 сек")
                           .arg(m_lapCount++)
                           .arg(QString::number(currentLap / 1000.0, 'f', 1));
-
-    emit lapAdded(lapInfo);
     lapTimer.restart();
+    return lapInfo;
 }
 
 QString Stopwatch::getTime() const

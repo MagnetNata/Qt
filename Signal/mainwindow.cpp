@@ -16,7 +16,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->PB_Clear, &QPushButton::clicked, this, &MainWindow::handleClear);
     connect(ui->PB_Krug, &QPushButton::clicked, this, &MainWindow::handleLap);
     connect(m_stopwatch, &Stopwatch::timeUpdated, this, &MainWindow::updateDisplay);
-    connect(m_stopwatch, &Stopwatch::lapAdded, this, &MainWindow::addLap);
 }
 
 MainWindow::~MainWindow()
@@ -39,7 +38,8 @@ void MainWindow::handleStartStop()
 
 void MainWindow::handleLap()
 {
-    m_stopwatch->lap();
+    Info = m_stopwatch->lap();
+    ui->TB_Krug->append(Info);
 }
 
 void MainWindow::handleClear()
@@ -54,9 +54,4 @@ void MainWindow::handleClear()
 void MainWindow::updateDisplay()
 {
     ui->L_time->setText(m_stopwatch->getTime());
-}
-
-void MainWindow::addLap(QString lapInfo)
-{
-    ui->TB_Krug->append(lapInfo);
 }

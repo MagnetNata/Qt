@@ -12,7 +12,7 @@ public:
     explicit Stopwatch(QObject *parent = nullptr);
     void startStop();
     void reset();
-    void lap();
+    QString lap();
     QString getTime() const;
     QString getLapTime() const;
     bool isRunning() const;
@@ -31,7 +31,6 @@ public slots:
 
 signals:
     void timeUpdated();
-    void lapAdded(QString lapInfo);
 };
 
 #endif // STOPWATCH_H

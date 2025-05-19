@@ -2,9 +2,10 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QDebug>
+#include <QMutex>
 #include <QtConcurrent>
 #include "ExampleRace.h"
+#include "Controller.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -15,43 +16,23 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
-    void StartRace( void );
-
+    explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow() override; // Явное объявление деструктора
 
 private slots:
-
     void on_pb_start_clicked();
 
 private:
     Ui::MainWindow *ui;
-    uint32_t number = 0, countFinish = 0;
-
+    uint32_t number = 0;
+    uint32_t countFinish = 0;
     QMutex m;
-    Controller *race1;
-    Controller *race2;
 
-    ExampleRace *concurRace1;
-    ExampleRace *concurRace2;
+    Controller *race1 = nullptr;
+    Controller *race2 = nullptr;
+    ExampleRace *concurRace1 = nullptr;
+    ExampleRace *concurRace2 = nullptr;
 
+    void StartRace();
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif // MAINWINDOW_H

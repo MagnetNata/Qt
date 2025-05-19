@@ -1,7 +1,6 @@
 #include "mainwindow.h"
-#include "./ui_mainwindow.h"
-
-
+#include "ui_mainwindow.h"
+#include <QFutureWatcher>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -11,104 +10,84 @@ MainWindow::MainWindow(QWidget *parent)
     ui->sb_initNum->setValue(200000);
     ui->rb_synchOff->setChecked(true);
 
-   race1 = new Controller(&m);
-   race2 = new Controller(&m);
+    race1 = new Controller(&m);
+    race2 = new Controller(&m);
+    concurRace1 = new ExampleRace(&m);
+    concurRace2 = new ExampleRace(&m);
 
-   concurRace1 = new ExampleRace(&m);
-   concurRace2 = new ExampleRace(&m);
-
-    //Сигналы по завершению работы потоков
-    connect(race1, &Controller::sig_WorkFinish, [&](){
-        //отображаем только когда второй поток закончит работу
+    auto handleFinish = [this](){
         if(countFinish == 0){
             countFinish++;
         }
         else{
-            ui->te_debug->append("Искомое число равно: " + QString::number(number) + ", а должно быть " +
-                                  QString::number(ui->sb_initNum->value()*2));
+            ui->te_debug->append("Искомое число равно: " + QString::number(number) +
+                                 ", а должно быть " + QString::number(ui->sb_initNum->value()*2));
             ui->pb_start->setEnabled(true);
         }
+    };
 
-    });
-
-    connect(race2, &Controller::sig_WorkFinish, [&](){
-
-        if(countFinish == 0){
-            countFinish++;
-        }
-        else{
-            ui->te_debug->append("Искомое число равно: " + QString::number(number) + ", а должно быть " +
-                                 QString::number(ui->sb_initNum->value()*2));
-            ui->pb_start->setEnabled(true);
-        }
-
-    });
-
-
-    connect(concurRace1, &ExampleRace::sig_Finish, [&](){
-
-        if(countFinish == 0){
-            countFinish++;
-        }
-        else{
-            ui->te_debug->append("Искомое число равно: " + QString::number(number) + ", а должно быть " +
-                                 QString::number(ui->sb_initNum->value()*2));
-            ui->pb_start->setEnabled(true);
-        }
-    });
-
-    connect(concurRace2, &ExampleRace::sig_Finish, [&](){
-
-        if(countFinish == 0){
-            countFinish++;
-        }
-        else{
-            ui->te_debug->append("Искомое число равно: " + QString::number(number) + ", а должно быть " +
-                                 QString::number(ui->sb_initNum->value()*2));
-            ui->pb_start->setEnabled(true);
-        }
-    });
+    connect(race1, &Controller::sig_WorkFinish, this, handleFinish);
+    connect(race2, &Controller::sig_WorkFinish, this, handleFinish);
+    connect(concurRace1, &ExampleRace::sig_Finish, this, handleFinish);
+    connect(concurRace2, &ExampleRace::sig_Finish, this, handleFinish);
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
     delete race1;
     delete race2;
     delete concurRace1;
     delete concurRace2;
+    delete ui;
 }
 
-//Метод запускает два потока
-void MainWindow::StartRace(void){
-
-
-    if(ui->rb_qtConcur->isChecked()){
-
-        auto future1 = QtConcurrent::run([this]() {
-            concurRace1->DoWork(&number, ui->rb_mutexOn->isChecked(), ui->sb_initNum->value());
-        });
-
-        auto future2 = QtConcurrent::run([this]() {
-            concurRace2->DoWork(&number, ui->rb_mutexOn->isChecked(), ui->sb_initNum->value());
-        });
-
-        future1.waitForFinished();
-        future2.waitForFinished();
-
-    }
-    else{
-        emit race1->operate(&number, ui->rb_mutexOn->isChecked(), ui->sb_initNum->value());
-        emit race2->operate(&number, ui->rb_mutexOn->isChecked(), ui->sb_initNum->value());
-    }
-}
-
-//Обработка кнопки "Старт"
-void MainWindow::on_pb_start_clicked()
+void MainWindow::StartRace()
 {
     ui->pb_start->setEnabled(false);
     countFinish = 0;
     number = 0;
-    StartRace( );
+
+    if(ui->rb_qtConcur->isChecked()){
+        bool useMutex = ui->rb_mutexOn->isChecked();
+        int iterations = ui->sb_initNum->value();
+
+        // Используем атомарные операции для точного подсчета
+        std::atomic<uint32_t> atomicNumber(0);
+
+        auto worker = [&atomicNumber, iterations, useMutex, this](){
+            for(int i = 0; i < iterations; i++){
+                if(useMutex){
+                    QMutexLocker locker(&m);
+                    atomicNumber++;
+                } else {
+                    atomicNumber++;
+                }
+            }
+        };
+
+        QFuture<void> future1 = QtConcurrent::run(worker);
+        QFuture<void> future2 = QtConcurrent::run(worker);
+
+        QFutureWatcher<void> watcher;
+        watcher.setFuture(future1);
+        watcher.waitForFinished();
+        watcher.setFuture(future2);
+        watcher.waitForFinished();
+
+        // После завершения обоих потоков сохраняем результат
+        number = atomicNumber.load();
+
+        ui->te_debug->append("Искомое число равно: " + QString::number(number) +
+                             ", а должно быть " + QString::number(ui->sb_initNum->value()*2));
+        ui->pb_start->setEnabled(true);
+    }
+    else {
+        race1->operate(&number, ui->rb_mutexOn->isChecked(), ui->sb_initNum->value());
+        race2->operate(&number, ui->rb_mutexOn->isChecked(), ui->sb_initNum->value());
+    }
 }
 
+void MainWindow::on_pb_start_clicked()
+{
+    StartRace();
+}

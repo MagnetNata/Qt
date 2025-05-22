@@ -9,8 +9,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
-
+find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent Charts)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -19,14 +18,12 @@ set(PROJECT_SOURCES
         mainwindow.ui
 )
 
-
 add_executable(PreGraphic
     ${PROJECT_SOURCES}
 )
 
-
-target_link_libraries(PreGraphic Qt6::Widgets
-                                      Qt6::Concurrent
-                                      )
-
-
+target_link_libraries(PreGraphic
+    Qt6::Widgets
+    Qt6::Concurrent
+    Qt6::Charts
+)

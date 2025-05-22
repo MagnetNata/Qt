@@ -9,12 +9,9 @@
 #include <QtConcurrent>
 #include <algorithm>
 
-///Подключаем все что нужно для графиков
-#include <QLineSeries>
-#include <QtCharts>
-#include <QChartView>
-
-#define FD 1000.0 //частота дискретизации
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
+#include <QValueAxis>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -27,24 +24,19 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    //Метод считывает данные из исходного файла
     QVector<uint32_t> ReadFile(QString path, uint8_t numberChannel);
-    //Метод преобразует данные физические величины, В?
     QVector<double> ProcessFile(QVector<uint32_t> dataFile);
-    //Метод ищет Максимумы
     QVector<double> FindMax(QVector<double> resultData);
-    //Метод ищет минимумы
     QVector<double> FindMin(QVector<double> resultData);
-    //Метод отображает результаты
     void DisplayResult(QVector<double> mins, QVector<double> maxs);
 
-
+signals:
+    void dataReadyForPlot(const QVector<double>& data);
 
 private slots:
     void on_pb_path_clicked();
     void on_pb_start_clicked();
-
-
+    void plotData(const QVector<double>& data);
 
 private:
     Ui::MainWindow *ui;
@@ -54,6 +46,6 @@ private:
     QVector<uint32_t> readData;
     QVector<double> procesData;
     QVector<double> mins, maxs;
-
 };
+
 #endif // MAINWINDOW_H

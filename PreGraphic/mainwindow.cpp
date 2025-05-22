@@ -8,7 +8,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->pb_clearResult->setCheckable(true);
 
-
+    connect(this, &MainWindow::dataReadyForPlot, this, &MainWindow::plotData);
 }
 
 MainWindow::~MainWindow()
@@ -16,27 +16,16 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-
-
-/****************************************************/
-/*!
-@brief:	Метод считывает данные из файла
-@param: path - путь к файлу
-        numberChannel - какой канал АЦП считать
-*/
-/****************************************************/
 QVector<uint32_t> MainWindow::ReadFile(QString path, uint8_t numberChannel)
 {
-
     QFile file(path);
     file.open(QIODevice::ReadOnly);
 
-    if(file.isOpen() == false){
-
+    if(!file.isOpen()){
         if(pathToFile.isEmpty()){
             QMessageBox mb;
             mb.setWindowTitle("Ошибка");
-            mb.setText("Ошибка открытия фала");
+            mb.setText("Ошибка открытия файла");
             mb.exec();
         }
     }
@@ -49,30 +38,24 @@ QVector<uint32_t> MainWindow::ReadFile(QString path, uint8_t numberChannel)
     readData.clear();
     uint32_t currentWorld = 0, sizeFrame = 0;
 
-    while(dataStream.atEnd() == false){
-
+    while(!dataStream.atEnd()){
         dataStream >> currentWorld;
 
         if(currentWorld == 0xFFFFFFFF){
-
             dataStream >> currentWorld;
 
             if(currentWorld < 0x80000000){
-
                 dataStream >> sizeFrame;
 
                 if(sizeFrame > 1500){
                     continue;
                 }
 
-                for(int i = 0; i<sizeFrame/sizeof(uint32_t); i++){
-
+                for(int i = 0; i < sizeFrame/sizeof(uint32_t); i++){
                     dataStream >> currentWorld;
 
                     if((currentWorld >> 24) == numberChannel){
-
                         readData.append(currentWorld);
-
                     }
                 }
             }
@@ -103,19 +86,15 @@ QVector<double> MainWindow::ProcessFile(const QVector<uint32_t> dataFile)
 
 QVector<double> MainWindow::FindMax(QVector<double> resultData)
 {
-    double max = 0, sMax=0;
-    //Поиск первого максиума
+    double max = 0, sMax = 0;
     foreach (double num, resultData){
-        //QThread::usleep(1);
         if(num > max){
             max = num;
         }
     }
 
-    //Поиск 2го максимума
     foreach (double num, resultData){
-        //QThread::usleep(1);
-        if(num > sMax && (qFuzzyCompare(num, max) == false)){
+        if(num > sMax && !qFuzzyCompare(num, max)){
             sMax = num;
         }
     }
@@ -127,19 +106,15 @@ QVector<double> MainWindow::FindMax(QVector<double> resultData)
 
 QVector<double> MainWindow::FindMin(QVector<double> resultData)
 {
-
     double min = 0, sMin = 0;
-    QThread::sleep(1);
-    //Поиск первого максиума
     foreach (double num, resultData){
         if(num < min){
             min = num;
         }
     }
-    QThread::sleep(1);
-    //Поиск 2го максимума
+
     foreach (double num, resultData){
-        if(num < sMin && (qFuzzyCompare(num, min) == false)){
+        if(num < sMin && !qFuzzyCompare(num, min)){
             sMin = num;
         }
     }
@@ -147,47 +122,70 @@ QVector<double> MainWindow::FindMin(QVector<double> resultData)
     QVector<double> mins = {min, sMin};
     ui->chB_minSucess->setChecked(true);
     return mins;
-
 }
 
 void MainWindow::DisplayResult(QVector<double> mins, QVector<double> maxs)
 {
     ui->te_Result->append("Расчет закончен!");
-
     ui->te_Result->append("Первый минимум " + QString::number(mins.first()));
     ui->te_Result->append("Второй минимум " + QString::number(mins.at(1)));
-
     ui->te_Result->append("Первый максимум " + QString::number(maxs.first()));
     ui->te_Result->append("Второй максимум " + QString::number(maxs.at(1)));
 }
 
+void MainWindow::plotData(const QVector<double>& data)
+{
+    QWidget *chartWindow = new QWidget();
+    chartWindow->setWindowTitle("График данных");
+    chartWindow->resize(800, 600);
 
-/****************************************************/
-/*!
-@brief:	Обработчик клика на кнопку "Выбрать путь"
-*/
-/****************************************************/
+    QChart *chart = new QChart();
+    QLineSeries *series = new QLineSeries();
+
+    int pointsToShow = qMin(data.size(), 1000);
+    for(int i = 0; i < pointsToShow; ++i) {
+        series->append(i, data[i]);
+    }
+
+    chart->addSeries(series);
+    chart->legend()->hide();
+
+    QValueAxis *axisX = new QValueAxis();
+    axisX->setTitleText("Отсчеты");
+    axisX->setRange(0, pointsToShow);
+
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Амплитуда, В");
+
+    chart->addAxis(axisX, Qt::AlignBottom);
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisX);
+    series->attachAxis(axisY);
+
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+
+    QVBoxLayout *layout = new QVBoxLayout(chartWindow);
+    layout->addWidget(chartView);
+    chartWindow->setLayout(layout);
+
+    chartWindow->show();
+}
+
 void MainWindow::on_pb_path_clicked()
 {
     pathToFile = "";
     ui->le_path->clear();
-
-    pathToFile =  QFileDialog::getOpenFileName(this,
-                                              tr("Открыть файл"), "/home/", tr("ADC Files (*.adc)"));
-
+    pathToFile = QFileDialog::getOpenFileName(this,
+                                              tr("Открыть файл"),
+                                              "/home/",
+                                              tr("ADC Files (*.adc)"));
     ui->le_path->setText(pathToFile);
 }
 
-/****************************************************/
-/*!
-@brief:	Обработчик клика на кнопку "Старт"
-*/
-/****************************************************/
 void MainWindow::on_pb_start_clicked()
 {
-    //проверка на то, что файл выбран
     if(pathToFile.isEmpty()){
-
         QMessageBox mb;
         mb.setWindowTitle("Ошибка");
         mb.setText("Выберите файл!");
@@ -201,7 +199,6 @@ void MainWindow::on_pb_start_clicked()
     ui->chB_minSucess->setChecked(false);
 
     int selectIndex = ui->cmB_numCh->currentIndex();
-    //Маски каналов
     if(selectIndex == 0){
         numberSelectChannel = 0xEA;
     }
@@ -212,27 +209,16 @@ void MainWindow::on_pb_start_clicked()
         numberSelectChannel = 0xED;
     }
 
-
     auto read = [&]{ return ReadFile(pathToFile, numberSelectChannel); };
-    auto process = [&](QVector<uint32_t> res){ return ProcessFile(res);};
+    auto process = [&](QVector<uint32_t> res){ return ProcessFile(res); };
     auto findMax = [&](QVector<double> res){
-                                                maxs = FindMax(res);
-                                                mins = FindMin(res);
-                                                DisplayResult(mins, maxs);
+        maxs = FindMax(res);
+        mins = FindMin(res);
+        DisplayResult(mins, maxs);
+        emit dataReadyForPlot(res);
+    };
 
-                                                /*
-                                                 * Тут необходимо реализовать код наполнения серии
-                                                 * и вызов сигнала для отображения графика
-                                                 */
-
-                                             };
-
-    auto result = QtConcurrent::run(read)
-                               .then(process)
-                               .then(findMax);
-
-
-
+    QtConcurrent::run(read)
+        .then(process)
+        .then(findMax);
 }
-
-
